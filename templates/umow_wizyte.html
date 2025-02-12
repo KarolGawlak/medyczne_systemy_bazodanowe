@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Umów Wizytę</h2>
+    <form id="appointment-form">
+        <div class="mb-3">
+            <label for="pacjent_id" class="form-label">Pacjent</label>
+            <select class="form-control" id="pacjent_id" name="pacjent_id" required>
+                <option value="">Wybierz pacjenta</option>
+                {% for pacjent in pacjenci %}
+                <option value="{{ pacjent.id }}">{{ pacjent.imie }} {{ pacjent.nazwisko }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="lekarz_id" class="form-label">Lekarz</label>
+            <select class="form-control" id="lekarz_id" name="lekarz_id" required>
+                <option value="">Wybierz lekarza</option>
+                {% for lekarz in lekarze %}
+                <option value="{{ lekarz.id }}">{{ lekarz.imie }} {{ lekarz.nazwisko }} - {{ lekarz.specjalizacja }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="data_wizyty" class="form-label">Data Wizyty</label>
+            <input type="date" class="form-control" id="data_wizyty" name="data_wizyty" required>
+        </div>
+        <div class="mb-3">
+            <label for="godzina_wizyty" class="form-label">Godzina Wizyty</label>
+            <input type="time" class="form-control" id="godzina_wizyty" name="godzina_wizyty" required>
+        </div>
+        <div class="mb-3">
+            <label for="opis" class="form-label">Opis</label>
+            <textarea class="form-control" id="opis" name="opis" rows="3"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Umów Wizytę</button>
+    </form>
+</div>
+
+<script>
+document.getElementById('appointment-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        pacjent_id: document.getElementById('pacjent_id').value,
+        lekarz_id: document.getElementById('lekarz_id').value,
+        data_wizyty: document.getElementById('data_wizyty').value,
+        godzina_wizyty: document.getElementById('godzina_wizyty').value,
+        opis: document.getElementById('opis').value
+    };
+
+    console.log('Sending data:', formData);
+
+    try {
+        const response = await fetch('/wizyty', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+
+        if (response.ok) {
+            alert('Wizyta została umówiona pomyślnie!');
+            window.location.href = '/wizyty';
+        } else {
+            const errorData = await response.json();
+            alert('Wystąpił błąd podczas umawiania wizyty: ' + (errorData.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Wystąpił błąd podczas umawiania wizyty: ' + error.message);
+    }
+});
+</script>
+{% endblock %} 

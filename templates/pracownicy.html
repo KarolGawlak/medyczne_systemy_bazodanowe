@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4" style="height: 50vh;">
+    <h2>Lista Pracowników Recepcji</h2>
+    <div class="table-container" style="height: calc(100% - 50px); overflow-y: auto;">
+        <table class="table table-striped">
+            <thead class="sticky-top bg-white">
+                <tr>
+                    <th>Imię</th>
+                    <th>Nazwisko</th>
+                    {% if current_user.is_admin %}
+                    <th>Akcje</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for pracownik in pracownicy %}
+                <tr style="height: 60px;" id="row-{{ pracownik.id }}">
+                    <td>
+                        <span class="display-value">{{ pracownik.imie }}</span>
+                        {% if current_user.is_admin %}
+                        <input type="text" class="form-control edit-input" style="display: none;" value="{{ pracownik.imie }}">
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="display-value">{{ pracownik.nazwisko }}</span>
+                        {% if current_user.is_admin %}
+                        <input type="text" class="form-control edit-input" style="display: none;" value="{{ pracownik.nazwisko }}">
+                        {% endif %}
+                    </td>
+                    {% if current_user.is_admin %}
+                    <td>
+                        <button class="btn btn-sm btn-info edit-btn" onclick="toggleEdit('{{ pracownik.id }}')">Edytuj</button>
+                        <button class="btn btn-sm btn-success save-btn" style="display: none;" onclick="zapiszEdycjePracownika('{{ pracownik.id }}')">Zapisz</button>
+                        <button class="btn btn-sm btn-secondary cancel-btn" style="display: none;" onclick="anulujEdycje('{{ pracownik.id }}')">Anuluj</button>
+                        <button class="btn btn-sm btn-danger" onclick="usunPracownika('{{ pracownik.id }}')">Usuń</button>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if current_user.is_admin %}
+<script>
+function toggleEdit(id) {
+    const row = document.getElementById(`row-${id}`);
+    row.querySelectorAll('.display-value').forEach(el => el.style.display = 'none');
+    row.querySelectorAll('.edit-input').forEach(el => el.style.display = 'block');
+    row.querySelector('.edit-btn').style.display = 'none';
+    row.querySelector('.save-btn').style.display = 'inline';
+    row.querySelector('.cancel-btn').style.display = 'inline';
+}
+
+function anulujEdycje(id) {
+    const row = document.getElementById(`row-${id}`);
+    row.querySelectorAll('.display-value').forEach(el => el.style.display = 'block');
+    row.querySelectorAll('.edit-input').forEach(el => el.style.display = 'none');
+    row.querySelector('.edit-btn').style.display = 'inline';
+    row.querySelector('.save-btn').style.display = 'none';
+    row.querySelector('.cancel-btn').style.display = 'none';
+}
+
+async function zapiszEdycjePracownika(id) {
+    const row = document.getElementById(`row-${id}`);
+    const inputs = row.querySelectorAll('.edit-input');
+    
+    const data = {
+        imie: inputs[0].value,
+        nazwisko: inputs[1].value
+    };
+
+    try {
+        const response = await fetch(`/pracownicy/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            const spans = row.querySelectorAll('.display-value');
+            spans[0].textContent = data.imie;
+            spans[1].textContent = data.nazwisko;
+            anulujEdycje(id);
+        } else {
+            const errorData = await response.json();
+            alert(errorData.error || 'Wystąpił błąd podczas zapisywania zmian');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Wystąpił błąd podczas zapisywania zmian');
+    }
+}
+
+async function usunPracownika(id) {
+    if (confirm('Czy na pewno chcesz usunąć tego pracownika?')) {
+        try {
+            const response = await fetch(`/pracownicy/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                document.getElementById(`row-${id}`).remove();
+            } else {
+                const errorData = await response.json();
+                alert(errorData.error || 'Wystąpił błąd podczas usuwania pracownika');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Wystąpił błąd podczas usuwania pracownika');
+        }
+    }
+}
+</script>
+{% endif %}
+{% endblock %} 

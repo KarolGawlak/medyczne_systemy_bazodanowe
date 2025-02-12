@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Zarządzanie Użytkownikami</h2>
+    
+    <!-- Add User Form -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Dodaj Nowego Użytkownika</h4>
+        </div>
+        <div class="card-body">
+            <form id="add-user-form">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <input type="text" class="form-control" id="new-username" placeholder="Nazwa użytkownika" required>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="password" class="form-control" id="new-password" placeholder="Hasło" required>
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-control" id="new-role" onchange="toggleAdditionalFields()">
+                            <option value="user">Pacjent</option>
+                            <option value="doctor">Lekarz</option>
+                            <option value="receptionist">Pracownik Recepcji</option>
+                            <option value="admin">Administrator</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Additional fields that show/hide based on role -->
+                <div id="additional-fields" class="row mb-3">
+                    <div class="col-md-4">
+                        <input type="text" class="form-control" id="new-firstname" placeholder="Imię" required>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" class="form-control" id="new-lastname" placeholder="Nazwisko" required>
+                    </div>
+                    <div class="col-md-4" id="pesel-field" style="display: none;">
+                        <input type="text" class="form-control" id="new-pesel" placeholder="PESEL" maxlength="11">
+                    </div>
+                    <div class="col-md-4" id="birth-date-field" style="display: none;">
+                        <input type="date" class="form-control" id="new-birth-date" placeholder="Data urodzenia">
+                    </div>
+                    <div class="col-md-4" id="phone-field" style="display: none;">
+                        <input type="tel" class="form-control" id="new-phone" placeholder="Telefon">
+                    </div>
+                    <div class="col-md-4" id="specialization-field" style="display: none;">
+                        <select class="form-control" id="new-specialization">
+                            <option value="">Wybierz specjalizację</option>
+                            <option value="Pediatra">Pediatra</option>
+                            <option value="Kardiolog">Kardiolog</option>
+                            <option value="Dermatolog">Dermatolog</option>
+                            <option value="Neurolog">Neurolog</option>
+                            <option value="Ortopeda">Ortopeda</option>
+                            <option value="Okulista">Okulista</option>
+                            <option value="Ginekolog">Ginekolog</option>
+                            <option value="Urolog">Urolog</option>
+                            <option value="Psychiatra">Psychiatra</option>
+                            <option value="Laryngolog">Laryngolog</option>
+                            <option value="Endokrynolog">Endokrynolog</option>
+                            <option value="Chirurg">Chirurg</option>
+                            <option value="Alergolog">Alergolog</option>
+                            <option value="Stomatolog">Stomatolog</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-success">Dodaj Użytkownika</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nazwa użytkownika</th>
+                    <th>Rola</th>
+                    <th>Imię</th>
+                    <th>Nazwisko</th>
+                    <th>Akcje</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.role }}</td>
+                    <td>{{ user.firstname if user.firstname else '' }}</td>
+                    <td>{{ user.lastname if user.lastname else '' }}</td>
+                    <td>
+                        {% if user.role != 'admin' %}
+                            <button class="btn btn-sm btn-danger" onclick="deleteUser('{{ user.id }}')">Usuń</button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function toggleAdditionalFields() {
+    const role = document.getElementById('new-role').value;
+    const specializationField = document.getElementById('specialization-field');
+    const peselField = document.getElementById('pesel-field');
+    const birthDateField = document.getElementById('birth-date-field');
+    const phoneField = document.getElementById('phone-field');
+    
+    if (role === 'doctor') {
+        specializationField.style.display = 'block';
+        peselField.style.display = 'none';
+        birthDateField.style.display = 'none';
+        phoneField.style.display = 'none';
+    } else if (role === 'user') {
+        specializationField.style.display = 'none';
+        peselField.style.display = 'block';
+        birthDateField.style.display = 'block';
+        phoneField.style.display = 'block';
+    } else {
+        specializationField.style.display = 'none';
+        peselField.style.display = 'none';
+        birthDateField.style.display = 'none';
+        phoneField.style.display = 'none';
+    }
+}
+
+document.getElementById('add-user-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const role = document.getElementById('new-role').value;
+    const formData = {
+        username: document.getElementById('new-username').value,
+        password: document.getElementById('new-password').value,
+        role: role,
+        firstname: document.getElementById('new-firstname').value,
+        lastname: document.getElementById('new-lastname').value
+    };
+
+    // Basic empty field validation
+    if (!formData.username || !formData.password || !formData.firstname || !formData.lastname) {
+        alert('Wszystkie pola są wymagane');
+        return;
+    }
+
+    if (role === 'user') {
+        const pesel = document.getElementById('new-pesel').value;
+        const birth_date = document.getElementById('new-birth-date').value;
+        const phone = document.getElementById('new-phone').value;
+
+        // Validate required fields for user
+        if (!pesel || !birth_date || !phone) {
+            alert('Wszystkie pola są wymagane dla pacjenta');
+            return;
+        }
+
+        // PESEL validation
+        if (!/^\d{11}$/.test(pesel)) {
+            alert('PESEL musi składać się z 11 cyfr');
+            return;
+        }
+
+        // Phone validation
+        if (!/^\d{9}$/.test(phone.replace(/\s/g, ''))) {
+            alert('Numer telefonu musi składać się z 9 cyfr');
+            return;
+        }
+
+        // Birth date validation
+        const birthDate = new Date(birth_date);
+        const today = new Date();
+
+        // Check if date is in the future
+        if (birthDate > today) {
+            alert('Data urodzenia nie może być w przyszłości');
+            return;
+        }
+
+        // Calculate age
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+
+        // Check if age is over 120
+        if (age > 120) {
+            alert('Nieprawidłowa data urodzenia - wiek nie może przekraczać 120 lat');
+            return;
+        }
+
+        formData.pesel = pesel;
+        formData.birth_date = birth_date;
+        formData.phone = phone;
+
+    } else if (role === 'doctor') {
+        const specialization = document.getElementById('new-specialization').value;
+        if (!specialization) {
+            alert('Specjalizacja jest wymagana dla lekarza');
+            return;
+        }
+        formData.specialization = specialization;
+    }
+
+    try {
+        const response = await fetch('/admin/users', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+            alert('Użytkownik dodany pomyślnie');
+            window.location.reload();
+        } else {
+            alert(data.error || 'Wystąpił błąd podczas dodawania użytkownika');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Wystąpił błąd podczas dodawania użytkownika');
+    }
+});
+
+async function deleteUser(userId) {
+    if (!confirm('Czy na pewno chcesz usunąć tego użytkownika?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/admin/users/${userId}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            const data = await response.json();
+            alert(data.error || 'Wystąpił błąd podczas usuwania użytkownika');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Wystąpił błąd podczas usuwania użytkownika');
+    }
+}
+
+// Initialize fields on page load
+toggleAdditionalFields();
+</script>
+{% endblock %} 

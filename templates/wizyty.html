@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4" style="height: 50vh;">
+    <h2>Lista Wizyt</h2>
+    <div class="table-container" style="height: calc(100% - 50px); overflow-y: auto;">
+        <table class="table table-striped">
+            <thead class="sticky-top bg-white">
+                <tr>
+                    <th>Data</th>
+                    <th>Pacjent</th>
+                    <th>Lekarz</th>
+                    <th>Opis</th>
+                    <th>Akcje</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for wizyta in wizyty %}
+                <tr style="height: 60px;" id="row-{{ wizyta.id }}">
+                    <td>
+                        <span class="display-value">{{ wizyta.data_wizyty.strftime('%Y-%m-%d') }} {{ wizyta.godzina_wizyty.strftime('%H:%M') }}</span>
+                        <div class="edit-input" style="display: none;">
+                            <input type="date" class="form-control" value="{{ wizyta.data_wizyty.strftime('%Y-%m-%d') }}">
+                            <input type="time" class="form-control mt-1" value="{{ wizyta.godzina_wizyty.strftime('%H:%M') }}">
+                        </div>
+                    </td>
+                    <td>
+                        <span class="display-value">{{ wizyta.pacjent.imie }} {{ wizyta.pacjent.nazwisko }}</span>
+                        <select class="form-control edit-input" style="display: none;">
+                            {% for pacjent in pacjenci %}
+                            <option value="{{ pacjent.id }}" {% if pacjent.id == wizyta.pacjent_id %}selected{% endif %}>
+                                {{ pacjent.imie }} {{ pacjent.nazwisko }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        <span class="display-value">{{ wizyta.lekarz.imie }} {{ wizyta.lekarz.nazwisko }}</span>
+                        <select class="form-control edit-input" style="display: none;">
+                            {% for lekarz in lekarze %}
+                            <option value="{{ lekarz.id }}" {% if lekarz.id == wizyta.lekarz_id %}selected{% endif %}>
+                                {{ lekarz.imie }} {{ lekarz.nazwisko }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        <span class="display-value">{{ wizyta.opis }}</span>
+                        <textarea class="form-control edit-input" style="display: none;">{{ wizyta.opis }}</textarea>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-info edit-btn" onclick="toggleEdit('{{ wizyta.id }}')">Edytuj</button>
+                        <button class="btn btn-sm btn-success save-btn" style="display: none;" onclick="zapiszEdycjeWizyty('{{ wizyta.id }}')">Zapisz</button>
+                        <button class="btn btn-sm btn-secondary cancel-btn" style="display: none;" onclick="anulujEdycje('{{ wizyta.id }}')">Anuluj</button>
+                        <button class="btn btn-sm btn-danger" onclick="usunWizyte('{{ wizyta.id }}')">Usuń</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+.table-container {
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    background: white;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.sticky-top {
+    top: 0;
+    z-index: 1;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+tr {
+    line-height: 40px;
+}
+
+.edit-input {
+    width: 100%;
+}
+</style>
+
+<script>
+function toggleEdit(id) {
+    const row = document.getElementById(`row-${id}`);
+    const displayValues = row.querySelectorAll('.display-value');
+    const editInputs = row.querySelectorAll('.edit-input');
+    const editBtn = row.querySelector('.edit-btn');
+    const saveBtn = row.querySelector('.save-btn');
+    const cancelBtn = row.querySelector('.cancel-btn');
+
+    displayValues.forEach(el => el.style.display = 'none');
+    editInputs.forEach(el => el.style.display = 'block');
+    editBtn.style.display = 'none';
+    saveBtn.style.display = 'inline-block';
+    cancelBtn.style.display = 'inline-block';
+}
+
+function anulujEdycje(id) {
+    const row = document.getElementById(`row-${id}`);
+    const displayValues = row.querySelectorAll('.display-value');
+    const editInputs = row.querySelectorAll('.edit-input');
+    const editBtn = row.querySelector('.edit-btn');
+    const saveBtn = row.querySelector('.save-btn');
+    const cancelBtn = row.querySelector('.cancel-btn');
+
+    displayValues.forEach(el => el.style.display = 'block');
+    editInputs.forEach(el => el.style.display = 'none');
+    editBtn.style.display = 'inline-block';
+    saveBtn.style.display = 'none';
+    cancelBtn.style.display = 'none';
+}
+
+function isWorkingHours(timeString) {
+    const hour = parseInt(timeString.split(':')[0]);
+    return hour >= 8 && hour < 18;
+}
+
+async function zapiszEdycjeWizyty(id) {
+    const row = document.getElementById(`row-${id}`);
+    const dateInput = row.querySelector('input[type="date"]');
+    const timeInput = row.querySelector('input[type="time"]');
+    const pacjentSelect = row.querySelectorAll('select')[0];
+    const lekarzSelect = row.querySelectorAll('select')[1];
+    const opisTextarea = row.querySelector('textarea');
+    
+    const formData = {
+        data_wizyty: dateInput.value,
+        godzina_wizyty: timeInput.value,
+        pacjent_id: pacjentSelect.value,
+        lekarz_id: lekarzSelect.value,
+        opis: opisTextarea.value
+    };
+
+    // Validation
+    const selectedDate = new Date(formData.data_wizyty + ' ' + formData.godzina_wizyty);
+    const now = new Date();
+
+    if (selectedDate < now) {
+        alert('Nie można umówić wizyty w przeszłości');
+        return;
+    }
+
+    if (!isWorkingHours(formData.godzina_wizyty)) {
+        alert('Wizyty są dostępne tylko w godzinach 8:00-18:00');
+        return;
+    }
+
+    if (!formData.pacjent_id) {
+        alert('Należy wybrać pacjenta');
+        return;
+    }
+
+    if (!formData.lekarz_id) {
+        alert('Należy wybrać lekarza');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/wizyty/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            const errorData = await response.json();
+            alert('Wystąpił błąd podczas zapisywania zmian: ' + (errorData.error || ''));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Wystąpił błąd podczas zapisywania zmian.');
+    }
+}
+
+async function usunWizyte(id) {
+    if (confirm('Czy na pewno chcesz usunąć tę wizytę?')) {
+        try {
+            const response = await fetch(`/wizyty/${id}`, {
+                method: 'DELETE'
+            });
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('Wystąpił błąd podczas usuwania wizyty.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Wystąpił błąd podczas usuwania wizyty.');
+        }
+    }
+}
+</script>
+{% endblock %} 

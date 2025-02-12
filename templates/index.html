@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h1 class="page-title">System Kartoteki Medycznej</h1>
+    <div class="row mt-4">
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Witamy w Systemie Kartoteki Medycznej</h4>
+                </div>
+                <div class="card-body">
+                    <p class="lead">System umożliwia zarządzanie kartoteką pacjentów, harmonogramem lekarzy oraz wizytami.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Features -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">Funkcje Systemu</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-user-plus"></i> Zarządzanie kartoteką pacjentów</li>
+                        <li><i class="fas fa-user-md"></i> Zarządzanie personelem medycznym</li>
+                        <li><i class="fas fa-calendar-alt"></i> Planowanie wizyt</li>
+                        <li><i class="fas fa-history"></i> Historia wizyt</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">Statystyki</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Liczba Pacjentów:</span>
+                        <span class="badge bg-primary">{{ liczba_pacjentow }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Liczba Lekarzy:</span>
+                        <span class="badge bg-success">{{ liczba_lekarzy }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Dzisiejsze Wizyty:</span>
+                        <span class="badge bg-info">{{ liczba_wizyt_dzis }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Font Awesome for icons -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+{% endblock %}

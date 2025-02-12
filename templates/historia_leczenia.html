@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    {% if not is_user %}
+    <h2>Dodaj Historię Leczenia</h2>
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <form id="historia-form">
+                        <div class="mb-3">
+                            <label for="pacjent" class="form-label">Wybierz Pacjenta</label>
+                            <select class="form-control" id="pacjent" required>
+                                <option value="">Wybierz pacjenta...</option>
+                                {% for pacjent in pacjenci %}
+                                    <option value="{{ pacjent.id }}">{{ pacjent.imie }} {{ pacjent.nazwisko }} ({{ pacjent.pesel }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="zalecenia" class="form-label">Zalecenia dotyczące leczenia</label>
+                            <textarea class="form-control" id="zalecenia" rows="4" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="wyniki" class="form-label">Wyniki badań</label>
+                            <textarea class="form-control" id="wyniki" rows="4" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Zapisz</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="col-md-12 mt-4">
+        <h3>{% if is_user %}Moja Historia Leczenia{% else %}Historia wpisów{% endif %}</h3>
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        {% if not is_user %}<th>Pacjent</th>{% endif %}
+                        <th>Data wpisu</th>
+                        <th>Zalecenia</th>
+                        <th>Wyniki badań</th>
+                        {% if current_user.is_admin %}
+                        <th>Akcje</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody id="historia-table">
+                    {% for wpis in historia %}
+                    <tr id="wpis-{{ wpis.id }}">
+                        {% if not is_user %}<td>{{ wpis.imie }} {{ wpis.nazwisko }}</td>{% endif %}
+                        <td>{{ wpis.data_wpisu.strftime('%Y-%m-%d %H:%M') if wpis.data_wpisu else '' }}</td>
+                        <td>{{ wpis.zalecenia }}</td>
+                        <td>{{ wpis.wyniki_badan }}</td>
+                        {% if current_user.is_admin %}
+                        <td>
+                            <button class="btn btn-sm btn-danger" onclick="usunWpis('{{ wpis.id }}')">Usuń</button>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('historia-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        pacjent_id: document.getElementById('pacjent').value,
+        zalecenia: document.getElementById('zalecenia').value,
+        wyniki_badan: document.getElementById('wyniki').value
+    };
+
+    try {
+        const response = await fetch('/historia-leczenia', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+            alert('Historia leczenia została dodana');
+            window.location.reload();
+        } else {
+            alert(data.error || 'Wystąpił błąd podczas dodawania historii leczenia');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Wystąpił błąd podczas dodawania historii leczenia');
+    }
+});
+
+async function usunWpis(id) {
+    if (confirm('Czy na pewno chcesz usunąć ten wpis?')) {
+        try {
+            const response = await fetch(`/historia-leczenia/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                document.getElementById(`wpis-${id}`).remove();
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Wystąpił błąd podczas usuwania wpisu');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Wystąpił błąd podczas usuwania wpisu');
+        }
+    }
+}
+</script>
+{% endblock %} 

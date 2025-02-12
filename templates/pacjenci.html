@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4" style="height: 50vh;">
+    <h2>Lista Pacjentów</h2>
+    <div class="table-container" style="height: calc(100% - 50px); overflow-y: auto;">
+        <table class="table table-striped">
+            <thead class="sticky-top bg-white">
+                <tr>
+                    <th>Imię</th>
+                    <th>Nazwisko</th>
+                    <th>PESEL</th>
+                    <th>Data urodzenia</th>
+                    <th>Telefon</th>
+                    <th>Akcje</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pacjent in pacjenci %}
+                <tr style="height: 60px;" id="row-{{ pacjent.id }}">
+                    <td>
+                        <span class="display-value">{{ pacjent.imie }}</span>
+                        <input type="text" class="form-control edit-input" style="display: none;" value="{{ pacjent.imie }}">
+                    </td>
+                    <td>
+                        <span class="display-value">{{ pacjent.nazwisko }}</span>
+                        <input type="text" class="form-control edit-input" style="display: none;" value="{{ pacjent.nazwisko }}">
+                    </td>
+                    <td>
+                        <span class="display-value">{{ pacjent.pesel }}</span>
+                        <input type="text" class="form-control edit-input" style="display: none;" value="{{ pacjent.pesel }}">
+                    </td>
+                    <td>
+                        <span class="display-value">{{ pacjent.data_urodzenia.strftime('%Y-%m-%d') }}</span>
+                        <input type="date" class="form-control edit-input" style="display: none;" value="{{ pacjent.data_urodzenia.strftime('%Y-%m-%d') }}">
+                    </td>
+                    <td>
+                        <span class="display-value">{{ pacjent.telefon }}</span>
+                        <input type="tel" class="form-control edit-input" style="display: none;" value="{{ pacjent.telefon }}">
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-info edit-btn" onclick="toggleEdit('{{ pacjent.id }}')">Edytuj</button>
+                        <button class="btn btn-sm btn-success save-btn" style="display: none;" onclick="zapiszEdycjePacjenta('{{ pacjent.id }}')">Zapisz</button>
+                        <button class="btn btn-sm btn-secondary cancel-btn" style="display: none;" onclick="anulujEdycje('{{ pacjent.id }}')">Anuluj</button>
+                        <button class="btn btn-sm btn-danger" onclick="usunPacjenta('{{ pacjent.id }}')">Usuń</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+.table-container {
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    background: white;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.sticky-top {
+    top: 0;
+    z-index: 1;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+tr {
+    line-height: 40px;
+}
+
+.edit-input {
+    width: 100%;
+}
+</style>
+
+<script>
+function toggleEdit(id) {
+    const row = document.getElementById(`row-${id}`);
+    const displayValues = row.querySelectorAll('.display-value');
+    const editInputs = row.querySelectorAll('.edit-input');
+    const editBtn = row.querySelector('.edit-btn');
+    const saveBtn = row.querySelector('.save-btn');
+    const cancelBtn = row.querySelector('.cancel-btn');
+
+    displayValues.forEach(el => el.style.display = 'none');
+    editInputs.forEach(el => el.style.display = 'block');
+    editBtn.style.display = 'none';
+    saveBtn.style.display = 'inline-block';
+    cancelBtn.style.display = 'inline-block';
+}
+
+function anulujEdycje(id) {
+    const row = document.getElementById(`row-${id}`);
+    const displayValues = row.querySelectorAll('.display-value');
+    const editInputs = row.querySelectorAll('.edit-input');
+    const editBtn = row.querySelector('.edit-btn');
+    const saveBtn = row.querySelector('.save-btn');
+    const cancelBtn = row.querySelector('.cancel-btn');
+
+    displayValues.forEach(el => el.style.display = 'block');
+    editInputs.forEach(el => el.style.display = 'none');
+    editBtn.style.display = 'inline-block';
+    saveBtn.style.display = 'none';
+    cancelBtn.style.display = 'none';
+
+    // Reset input values to original
+    editInputs.forEach((input, index) => {
+        input.value = displayValues[index].textContent.trim();
+    });
+}
+
+async function zapiszEdycjePacjenta(id) {
+    const row = document.getElementById(`row-${id}`);
+    const inputs = row.querySelectorAll('.edit-input');
+    
+    const formData = {
+        imie: inputs[0].value,
+        nazwisko: inputs[1].value,
+        pesel: inputs[2].value,
+        data_urodzenia: inputs[3].value,
+        telefon: inputs[4].value
+    };
+
+    // Client-side validation
+    if (!/^[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:[-\s][A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)*$/.test(formData.imie)) {
+        alert('Imię musi zaczynać się wielką literą i zawierać tylko litery');
+        return;
+    }
+
+    if (!/^[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:[-\s][A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)*$/.test(formData.nazwisko)) {
+        alert('Nazwisko musi zaczynać się wielką literą i zawierać tylko litery');
+        return;
+    }
+
+    if (!/^\d{11}$/.test(formData.pesel)) {
+        alert('PESEL musi składać się z 11 cyfr');
+        return;
+    }
+
+    if (!/^(?:\+48)?\d{9}$/.test(formData.telefon)) {
+        alert('Numer telefonu powinien składać się z 9 cyfr, opcjonalnie poprzedzonych +48');
+        return;
+    }
+
+    const birthDate = new Date(formData.data_urodzenia);
+    const today = new Date();
+    const minDate = new Date();
+    minDate.setFullYear(minDate.getFullYear() - 150);
+
+    if (birthDate > today) {
+        alert('Data urodzenia nie może być w przyszłości');
+        return;
+    }
+
+    if (birthDate < minDate) {
+        alert('Data urodzenia jest zbyt odległa');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/pacjenci/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+
+        if (response.ok) {
+            // Update display values
+            const displayValues = row.querySelectorAll('.display-value');
+            displayValues[0].textContent = formData.imie;
+            displayValues[1].textContent = formData.nazwisko;
+            displayValues[2].textContent = formData.pesel;
+            displayValues[3].textContent = formData.data_urodzenia;
+            displayValues[4].textContent = formData.telefon;
+            
+            // Switch back to display mode
+            anulujEdycje(id);
+        } else {
+            const errorData = await response.json();
+            alert('Wystąpił błąd podczas zapisywania zmian: ' + (errorData.error || ''));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Wystąpił błąd podczas zapisywania zmian.');
+    }
+}
+
+async function usunPacjenta(id) {
+    if (confirm('Czy na pewno chcesz usunąć tego pacjenta?')) {
+        try {
+            const response = await fetch(`/pacjenci/${id}`, {
+                method: 'DELETE'
+            });
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('Wystąpił błąd podczas usuwania pacjenta.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Wystąpił błąd podczas usuwania pacjenta.');
+        }
+    }
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Dodaj Nowego Lekarza</h2>
+    <form id="add-doctor-form">
+        <div class="mb-3">
+            <label for="imie" class="form-label">Imię</label>
+            <input type="text" class="form-control" id="imie" name="imie" required>
+        </div>
+        <div class="mb-3">
+            <label for="nazwisko" class="form-label">Nazwisko</label>
+            <input type="text" class="form-control" id="nazwisko" name="nazwisko" required>
+        </div>
+        <div class="mb-3">
+            <label for="specjalizacja" class="form-label">Specjalizacja</label>
+            <select class="form-control" id="specjalizacja" name="specjalizacja" required>
+                <option value="">Wybierz specjalizację</option>
+                <option value="Kardiolog">Kardiolog</option>
+                <option value="Pediatra">Pediatra</option>
+                <option value="Neurolog">Neurolog</option>
+                <option value="Dermatolog">Dermatolog</option>
+                <option value="Ortopeda">Ortopeda</option>
+                <option value="Okulista">Okulista</option>
+                <option value="Internista">Internista</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Dodaj Lekarza</button>
+    </form>
+</div>
+
+<script>
+document.getElementById('add-doctor-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        imie: document.getElementById('imie').value,
+        nazwisko: document.getElementById('nazwisko').value,
+        specjalizacja: document.getElementById('specjalizacja').value
+    };
+
+    try {
+        const response = await fetch('/lekarze', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+
+        if (response.ok) {
+            alert('Lekarz został dodany pomyślnie!');
+            window.location.href = '/lekarze';  // Redirect to doctors list
+        } else {
+            alert('Wystąpił błąd podczas dodawania lekarza.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Wystąpił błąd podczas dodawania lekarza.');
+    }
+});
+</script>
+{% endblock %} 

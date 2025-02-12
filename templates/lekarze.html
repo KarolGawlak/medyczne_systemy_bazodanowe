@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4" style="height: 50vh;">
+    <h2>Lista Lekarzy</h2>
+    <div class="table-container" style="height: calc(100% - 50px); overflow-y: auto;">
+        <table class="table table-striped">
+            <thead class="sticky-top bg-white">
+                <tr>
+                    <th>Imię</th>
+                    <th>Nazwisko</th>
+                    <th>Specjalizacja</th>
+                    {% if current_user.is_admin %}
+                    <th>Akcje</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for lekarz in lekarze %}
+                <tr style="height: 60px;" id="row-{{ lekarz.id }}">
+                    <td>
+                        <span class="display-value">{{ lekarz.imie }}</span>
+                        {% if current_user.is_admin %}
+                        <input type="text" class="form-control edit-input" style="display: none;" value="{{ lekarz.imie }}">
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="display-value">{{ lekarz.nazwisko }}</span>
+                        {% if current_user.is_admin %}
+                        <input type="text" class="form-control edit-input" style="display: none;" value="{{ lekarz.nazwisko }}">
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="display-value">{{ lekarz.specjalizacja }}</span>
+                        {% if current_user.is_admin %}
+                        <select class="form-control edit-input" style="display: none;">
+                            <option value="Pediatra" {% if lekarz.specjalizacja == 'Pediatra' %}selected{% endif %}>Pediatra</option>
+                            <option value="Kardiolog" {% if lekarz.specjalizacja == 'Kardiolog' %}selected{% endif %}>Kardiolog</option>
+                            <option value="Dermatolog" {% if lekarz.specjalizacja == 'Dermatolog' %}selected{% endif %}>Dermatolog</option>
+                            <option value="Neurolog" {% if lekarz.specjalizacja == 'Neurolog' %}selected{% endif %}>Neurolog</option>
+                            <option value="Ortopeda" {% if lekarz.specjalizacja == 'Ortopeda' %}selected{% endif %}>Ortopeda</option>
+                            <option value="Urolog" {% if lekarz.specjalizacja == 'Urolog' %}selected{% endif %}>Urolog</option>
+                            <option value="Psychiatra" {% if lekarz.specjalizacja == 'Psychiatra' %}selected{% endif %}>Psychiatra</option>
+                            <option value="Laryngolog" {% if lekarz.specjalizacja == 'Laryngolog' %}selected{% endif %}>Laryngolog</option>
+                            <option value="Endokrynolog" {% if lekarz.specjalizacja == 'Endokrynolog' %}selected{% endif %}>Endokrynolog</option>
+                            <option value="Chirurg" {% if lekarz.specjalizacja == 'Chirurg' %}selected{% endif %}>Chirurg</option>
+                            <option value="Alergolog" {% if lekarz.specjalizacja == 'Alergolog' %}selected{% endif %}>Alergolog</option>
+                            <option value="Stomatolog" {% if lekarz.specjalizacja == 'Stomatolog' %}selected{% endif %}>Stomatolog</option>
+                        </select>
+                        {% endif %}
+                    </td>
+                    {% if current_user.is_admin %}
+                    <td>
+                        <button class="btn btn-sm btn-info edit-btn" onclick="toggleEdit('{{ lekarz.id }}')">Edytuj</button>
+                        <button class="btn btn-sm btn-success save-btn" style="display: none;" onclick="zapiszEdycjeLekarza('{{ lekarz.id }}')">Zapisz</button>
+                        <button class="btn btn-sm btn-secondary cancel-btn" style="display: none;" onclick="anulujEdycje('{{ lekarz.id }}')">Anuluj</button>
+                        <button class="btn btn-sm btn-danger" onclick="usunLekarza('{{ lekarz.id }}')">Usuń</button>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+.table-container {
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    background: white;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.sticky-top {
+    top: 0;
+    z-index: 1;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+tr {
+    line-height: 40px;
+}
+
+.edit-input {
+    width: 100%;
+}
+</style>
+
+<script>
+function toggleEdit(id) {
+    const row = document.getElementById(`row-${id}`);
+    const displayValues = row.querySelectorAll('.display-value');
+    const editInputs = row.querySelectorAll('.edit-input');
+    const editBtn = row.querySelector('.edit-btn');
+    const saveBtn = row.querySelector('.save-btn');
+    const cancelBtn = row.querySelector('.cancel-btn');
+
+    displayValues.forEach(el => el.style.display = 'none');
+    editInputs.forEach(el => el.style.display = 'block');
+    editBtn.style.display = 'none';
+    saveBtn.style.display = 'inline-block';
+    cancelBtn.style.display = 'inline-block';
+}
+
+function anulujEdycje(id) {
+    const row = document.getElementById(`row-${id}`);
+    const displayValues = row.querySelectorAll('.display-value');
+    const editInputs = row.querySelectorAll('.edit-input');
+    const editBtn = row.querySelector('.edit-btn');
+    const saveBtn = row.querySelector('.save-btn');
+    const cancelBtn = row.querySelector('.cancel-btn');
+
+    displayValues.forEach(el => el.style.display = 'block');
+    editInputs.forEach(el => el.style.display = 'none');
+    editBtn.style.display = 'inline-block';
+    saveBtn.style.display = 'none';
+    cancelBtn.style.display = 'none';
+
+    // Reset input values to original
+    editInputs.forEach((input, index) => {
+        input.value = displayValues[index].textContent.trim();
+    });
+}
+
+async function zapiszEdycjeLekarza(id) {
+    const row = document.getElementById(`row-${id}`);
+    const inputs = row.querySelectorAll('.edit-input');
+    
+    const formData = {
+        imie: inputs[0].value,
+        nazwisko: inputs[1].value,
+        specjalizacja: inputs[2].value
+    };
+
+    // Validation
+    if (!/^[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:[-\s][A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)*$/.test(formData.imie)) {
+        alert('Imię musi zaczynać się wielką literą i zawierać tylko litery');
+        return;
+    }
+
+    if (!/^[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:[-\s][A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)*$/.test(formData.nazwisko)) {
+        alert('Nazwisko musi zaczynać się wielką literą i zawierać tylko litery');
+        return;
+    }
+
+    if (!formData.specjalizacja) {
+        alert('Należy wybrać specjalizację');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/lekarze/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+
+        if (response.ok) {
+            // Update display values
+            const displayValues = row.querySelectorAll('.display-value');
+            displayValues[0].textContent = formData.imie;
+            displayValues[1].textContent = formData.nazwisko;
+            displayValues[2].textContent = formData.specjalizacja;
+            
+            // Switch back to display mode
+            anulujEdycje(id);
+        } else {
+            const errorData = await response.json();
+            alert('Wystąpił błąd podczas zapisywania zmian: ' + (errorData.error || ''));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Wystąpił błąd podczas zapisywania zmian.');
+    }
+}
+
+async function usunLekarza(id) {
+    if (confirm('Czy na pewno chcesz usunąć tego lekarza?')) {
+        try {
+            const response = await fetch(`/lekarze/${id}`, {
+                method: 'DELETE'
+            });
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('Wystąpił błąd podczas usuwania lekarza.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Wystąpił błąd podczas usuwania lekarza.');
+        }
+    }
+}
+</script>
+{% endblock %}

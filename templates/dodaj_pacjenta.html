@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Dodaj Nowego Pacjenta</h2>
+    <form id="add-patient-form">
+        <div class="mb-3">
+            <label for="imie" class="form-label">Imię</label>
+            <input type="text" class="form-control" id="imie" name="imie" required 
+                   pattern="^[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:[-\s][A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)*$"
+                   title="Imię musi zaczynać się wielką literą i zawierać tylko litery">
+        </div>
+        <div class="mb-3">
+            <label for="nazwisko" class="form-label">Nazwisko</label>
+            <input type="text" class="form-control" id="nazwisko" name="nazwisko" required
+                   pattern="^[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:[-\s][A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)*$"
+                   title="Nazwisko musi zaczynać się wielką literą i zawierać tylko litery">
+        </div>
+        <div class="mb-3">
+            <label for="pesel" class="form-label">PESEL</label>
+            <input type="text" class="form-control" id="pesel" name="pesel" required
+                   pattern="\d{11}"
+                   title="PESEL musi składać się z 11 cyfr">
+        </div>
+        <div class="mb-3">
+            <label for="data_urodzenia" class="form-label">Data Urodzenia</label>
+            <input type="date" class="form-control" id="data_urodzenia" name="data_urodzenia" 
+                   required max="{{ today }}" min="{{ min_date }}">
+        </div>
+        <div class="mb-3">
+            <label for="telefon" class="form-label">Telefon</label>
+            <input type="tel" class="form-control" id="telefon" name="telefon" required
+                   pattern="(?:\+48)?\d{9}"
+                   title="Numer telefonu powinien składać się z 9 cyfr, opcjonalnie poprzedzonych +48">
+        </div>
+        <button type="submit" class="btn btn-primary">Dodaj Pacjenta</button>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('data_urodzenia').max = today;
+    
+    const minDate = new Date();
+    minDate.setFullYear(minDate.getFullYear() - 150);
+    document.getElementById('data_urodzenia').min = minDate.toISOString().split('T')[0];
+});
+
+document.getElementById('add-patient-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const birthDate = new Date(document.getElementById('data_urodzenia').value);
+    const today = new Date();
+    
+    if (birthDate > today) {
+        alert('Data urodzenia nie może być w przyszłości');
+        return;
+    }
+    
+    const minDate = new Date();
+    minDate.setFullYear(minDate.getFullYear() - 150);
+    if (birthDate < minDate) {
+        alert('Data urodzenia jest zbyt odległa');
+        return;
+    }
+    
+    const formData = {
+        imie: document.getElementById('imie').value,
+        nazwisko: document.getElementById('nazwisko').value,
+        pesel: document.getElementById('pesel').value,
+        data_urodzenia: document.getElementById('data_urodzenia').value,
+        telefon: document.getElementById('telefon').value
+    };
+
+    try {
+        const response = await fetch('/pacjenci', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+            alert('Pacjent został dodany pomyślnie!');
+            window.location.href = '/pacjenci';
+        } else {
+            alert(data.error || 'Wystąpił błąd podczas dodawania pacjenta.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Wystąpił błąd podczas dodawania pacjenta.');
+    }
+});
+</script>
+{% endblock %} 
